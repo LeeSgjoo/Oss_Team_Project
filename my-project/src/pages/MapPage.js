@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { db } from "../firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { loadKakao } from "../kakaoLoader";
@@ -295,7 +295,7 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
     tail.setAttribute("height", "22");
     tail.style.position = "absolute";
     tail.style.left = "50%";
-    tail.style.bottom = "-10px";
+    tail.style.bottom = "-14px";
     tail.style.transform = "translateX(-50%)";
     tail.style.filter = "drop-shadow(0 2px 2px rgba(0,0,0,0.15))";
 
