@@ -119,8 +119,37 @@ export default function EditPage() {
   if (busy) return <div style={{ padding: 24 }}>불러오는 중...</div>;
 
   return (
-    <div style={{ maxWidth: 760, margin: "24px auto", padding: "0 12px" }}>
-      <h2>장소 수정</h2>
+    <div
+      style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        height: "100vh",
+        width: 420,
+        background: "#fff",
+        boxShadow: "-4px 0 16px rgba(0,0,0,0.15)",
+        overflowY: "auto",
+        padding: "24px 16px",
+        transition: "transform 0.3s ease",
+        zIndex: 5,
+      }}
+    >
+      <button
+        onClick={() => nav("/")}
+        style={{
+          border: "none",
+          background: "transparent",
+          fontSize: 20,
+          cursor: "pointer",
+          position: "absolute",
+          top: 12,
+          right: 16,
+        }}
+      >
+        ✕
+      </button>
+
+      <h2 style={{ marginTop: 28 }}>장소 수정</h2>
 
       <form onSubmit={onSave}>
         <div style={{ display: "grid", gap: 8 }}>
