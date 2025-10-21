@@ -1,27 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { Outlet } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { loadKakao } from "../kakaoLoader";
 
 export default function MapPage() {
-  const nav = useNavigate();
   const mapEl = useRef(null);
   const mapRef = useRef(null);
-  const myOverlaysRef = useRef([]);       // 우리(저장된) 커스텀 오버레이들
-  const searchPinRef = useRef(null);      // 검색 선택 시 임시 핀(오버레이)
-  const placesSvcRef = useRef(null);      // kakao.maps.services.Places 인스턴스
+  const myOverlaysRef = useRef([]);       // 저장된 오버레이
+  const searchPinRef = useRef(null);      // 검색 핀
+  const placesSvcRef = useRef(null);      // Kakao Places 서비스
+  const nav = useNavigate();
 
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // 검색 상태
   const [term, setTerm] = useState("");
   const [results, setResults] = useState([]);   // Kakao 검색 결과
   const [searching, setSearching] = useState(false);
 
-  // 1) Firestore에서 저장된 장소 목록 읽기
+  // ✅ Firestore에서 저장된 장소 목록 읽기
   useEffect(() => {
     (async () => {
       try {
@@ -37,7 +34,7 @@ export default function MapPage() {
     })();
   }, []);
 
-  // 2) Kakao 지도 초기화 (+ 세션 위치 복원)
+  // ✅ Kakao 지도 초기화 + 세션 위치 복원
   useEffect(() => {
     if (loading) return;
 
@@ -45,14 +42,16 @@ export default function MapPage() {
     (async () => {
       kakao = await loadKakao();
 
-      // 세션 저장된 지도 상태 복원
+      // 세션에서 지도 상태 복원
       let centerLat = 36.012, centerLng = 129.323, level = 4;
       const saved = sessionStorage.getItem("map_state");
       if (saved) {
         try {
           const s = JSON.parse(saved);
           if (isFinite(s.lat) && isFinite(s.lng) && isFinite(s.level)) {
-            centerLat = s.lat; centerLng = s.lng; level = s.level;
+            centerLat = s.lat;
+            centerLng = s.lng;
+            level = s.level;
           }
         } catch {}
       }
@@ -65,12 +64,15 @@ export default function MapPage() {
       const saveState = () => {
         const c = map.getCenter();
         const l = map.getLevel();
-        sessionStorage.setItem("map_state", JSON.stringify({ lat: c.getLat(), lng: c.getLng(), level: l }));
+        sessionStorage.setItem(
+          "map_state",
+          JSON.stringify({ lat: c.getLat(), lng: c.getLng(), level: l })
+        );
       };
       kakao.maps.event.addListener(map, "center_changed", saveState);
       kakao.maps.event.addListener(map, "zoom_changed", saveState);
 
-      // 지도 클릭 → 생성으로
+      // ✅ 지도 클릭 → 장소 생성 페이지 이동
       kakao.maps.event.addListener(map, "click", (e) => {
         if (window.confirm("이 위치로 새로운 장소를 추가할까요?")) {
           const lat = e.latLng.getLat().toFixed(6);
@@ -79,15 +81,15 @@ export default function MapPage() {
         }
       });
 
-      // Kakao Places 서비스 준비
+      // Kakao Places 준비
       placesSvcRef.current = new kakao.maps.services.Places(map);
 
-      // 저장된 장소 → 원형 사진 오버레이
-      drawSavedPlaceOverlays(kakao, map, savedPlaces, myOverlaysRef);
+      // 저장된 장소 오버레이 표시
+      drawSavedPlaceOverlays(kakao, map, savedPlaces, myOverlaysRef, nav);
     })();
 
     return () => {
-      // 오버레이 정리
+      // 지도 언마운트 시 정리
       myOverlaysRef.current.forEach(o => o.setMap(null));
       myOverlaysRef.current = [];
       if (searchPinRef.current) {
@@ -95,13 +97,13 @@ export default function MapPage() {
         searchPinRef.current = null;
       }
     };
-  }, [loading, savedPlaces, nav]);
+  }, [loading, savedPlaces, nav]); // ✅ nav 의존성 추가
 
-  // 3) 카카오 키워드 검색 실행
+  // ✅ Kakao 키워드 검색 실행
   const doSearch = () => {
     if (!term.trim() || !placesSvcRef.current) return;
     setSearching(true);
-    placesSvcRef.current.keywordSearch(term.trim(), (data, status/*, pagination*/) => {
+    placesSvcRef.current.keywordSearch(term.trim(), (data, status) => {
       setSearching(false);
       const { kakao } = window;
       if (status !== kakao.maps.services.Status.OK) {
@@ -110,34 +112,27 @@ export default function MapPage() {
         else console.warn("Search status:", status);
         return;
       }
-      setResults(data); // data: [{place_name, x(lng), y(lat), road_address_name, address_name, phone, ...}, ...]
-    }, {
-      // location: mapRef.current?.getCenter(), // 중심 기준 검색하고 싶으면 주석 해제
-      // radius: 5000,                         // m 단위
-      size: 10,   // 한 페이지 결과 수
-      page: 1,
-    });
+      setResults(data);
+    }, { size: 10, page: 1 });
   };
 
-  // 4) 검색 결과 클릭 → 지도 이동 + 임시 핀 표기 + “여기로 추가” 버튼 제공
+  // ✅ 검색 결과 클릭 → 지도 이동 + 핀 표시
   const focusResult = (item) => {
     const { kakao } = window;
     if (!mapRef.current) return;
-
     const lat = parseFloat(item.y);
     const lng = parseFloat(item.x);
     const pos = new kakao.maps.LatLng(lat, lng);
 
-    // 지도 이동
     mapRef.current.panTo(pos);
 
-    // 기존 임시 핀 제거
+    // 기존 핀 제거
     if (searchPinRef.current) {
       searchPinRef.current.setMap(null);
       searchPinRef.current = null;
     }
 
-    // 임시 오버레이 (작은 원형 썸네일/마커)
+    // 새 핀 표시
     const content = document.createElement("div");
     content.style.transform = "translate(-50%, -100%)";
     content.style.cursor = "pointer";
@@ -148,12 +143,13 @@ export default function MapPage() {
     pin.style.width = "26px";
     pin.style.height = "26px";
     pin.style.borderRadius = "50%";
-    pin.style.background = "#7c3aed"; // 보라
+    pin.style.background = "#7c3aed";
     pin.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
     content.appendChild(pin);
 
     const tail = document.createElement("div");
-    tail.style.width = "0"; tail.style.height = "0";
+    tail.style.width = "0";
+    tail.style.height = "0";
     tail.style.borderLeft = "6px solid transparent";
     tail.style.borderRight = "6px solid transparent";
     tail.style.borderTop = "7px solid #7c3aed";
@@ -161,9 +157,11 @@ export default function MapPage() {
     content.appendChild(tail);
 
     content.title = item.place_name;
-
     content.onclick = () => {
-      window.open(`https://map.kakao.com/link/map/${encodeURIComponent(item.place_name)},${lat},${lng}`, "_blank");
+      window.open(
+        `https://map.kakao.com/link/map/${encodeURIComponent(item.place_name)},${lat},${lng}`,
+        "_blank"
+      );
     };
 
     const overlay = new kakao.maps.CustomOverlay({
@@ -171,13 +169,13 @@ export default function MapPage() {
       content,
       yAnchor: 1,
       zIndex: 999,
-      clickable: true
+      clickable: true,
     });
     overlay.setMap(mapRef.current);
     searchPinRef.current = overlay;
   };
 
-  // 엔터로 검색
+  // 엔터 입력 → 검색 실행
   const onKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -187,40 +185,69 @@ export default function MapPage() {
 
   return (
     <div style={{ position: "relative" }}>
-      {/* 상단 검색바 (카카오 장소검색 전용) */}
-      <div style={{
-        position: "absolute", zIndex: 5, top: 10, left: 12,
-        background: "rgba(255,255,255,0.95)", backdropFilter: "saturate(120%) blur(4px)",
-        border: "1px solid #e5e5ea", borderRadius: 12, padding: 10,
-        display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-      }}>
+      {/* 검색바 */}
+      <div
+        style={{
+          position: "absolute",
+          zIndex: 5,
+          top: 10,
+          left: 12,
+          background: "rgba(255,255,255,0.95)",
+          backdropFilter: "saturate(120%) blur(4px)",
+          border: "1px solid #e5e5ea",
+          borderRadius: 12,
+          padding: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        }}
+      >
         <span>🔎</span>
         <input
           value={term}
           onChange={(e) => setTerm(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="장소를 검색하세요 (카카오 장소검색)"
-          style={{ border: "none", outline: "none", fontSize: 16, width: 260, background: "transparent" }}
+          style={{
+            border: "none",
+            outline: "none",
+            fontSize: 16,
+            width: 260,
+            background: "transparent",
+          }}
         />
         <button onClick={doSearch} disabled={searching} style={{ padding: "6px 10px" }}>
           {searching ? "검색 중..." : "검색"}
         </button>
       </div>
 
-      {/* 좌측 결과 패널 */}
+      {/* 검색 결과 목록 */}
       {!!results.length && (
-        <div style={{
-          position: "absolute", zIndex: 5, top: 56, left: 12,
-          width: 340, maxHeight: 360, overflow: "auto",
-          background: "#fff", border: "1px solid #e5e5ea", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.08)"
-        }}>
-          {results.map((r) => (
-            <div key={r.id} style={{ padding: 12, borderBottom: "1px solid #f1f1f5" }}>
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 5,
+            top: 56,
+            left: 12,
+            width: 340,
+            maxHeight: 360,
+            overflow: "auto",
+            background: "#fff",
+            border: "1px solid #e5e5ea",
+            borderRadius: 12,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+          }}
+        >
+          {results.map((r, i) => (
+            <div key={i} style={{ padding: 12, borderBottom: "1px solid #f1f1f5" }}>
               <div style={{ fontWeight: 700 }}>{r.place_name}</div>
               <div style={{ color: "#666", fontSize: 13, marginTop: 2 }}>
                 {r.road_address_name || r.address_name || "-"}
               </div>
-              {r.phone && <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{r.phone}</div>}
+              {r.phone && (
+                <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{r.phone}</div>
+              )}
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                 <button onClick={() => focusResult(r)}>이 위치 보기</button>
                 <button
@@ -233,8 +260,11 @@ export default function MapPage() {
                   여기로 장소추가
                 </button>
                 <a
-                  href={`https://map.kakao.com/link/to/${encodeURIComponent(r.place_name)},${r.y},${r.x}`}
-                  target="_blank" rel="noreferrer"
+                  href={`https://map.kakao.com/link/to/${encodeURIComponent(
+                    r.place_name
+                  )},${r.y},${r.x}`}
+                  target="_blank"
+                  rel="noreferrer"
                   style={{ marginLeft: "auto", fontSize: 12, textDecoration: "underline" }}
                 >
                   길찾기 →
@@ -248,17 +278,21 @@ export default function MapPage() {
       {/* 지도 */}
       <div
         ref={mapEl}
-        style={{ width: "100%", height: "calc(100vh - 60px)", borderTop: "1px solid #f0f0f0" }}
+        style={{
+          width: "100%",
+          height: "calc(100vh - 60px)",
+          borderTop: "1px solid #f0f0f0",
+        }}
       />
 
-      {/* 오른쪽 디테일 패널(슬라이드) 출력 위치 */}
+      {/* DetailPage 패널이 여기에 표시됨 */}
       <Outlet />
     </div>
   );
 }
 
-function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
-  storeRef.current.forEach(o => o.setMap(null));
+function drawSavedPlaceOverlays(kakao, map, places, storeRef, nav) {
+  storeRef.current.forEach((o) => o.setMap(null));
   storeRef.current = [];
 
   places.forEach((p, idx) => {
@@ -268,10 +302,8 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
     const base = 64;
     const pref = clamp(Number(p.preference) || 3, 1, 5);
     const size = base + (pref - 3) * 8 + (idx % 3) * 6;
-
     const img = p.image_url || "https://via.placeholder.com/200x200?text=No+Image";
 
-    // 🎨 content: 둥근 말풍선 (SVG 꼬리 포함)
     const content = document.createElement("div");
     content.style.position = "relative";
     content.style.transform = "translate(-50%, -100%)";
@@ -279,7 +311,6 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
     content.style.width = `${size + 12}px`;
     content.style.height = `${size + 20}px`;
 
-    // 내부 wrapper (말풍선 테두리)
     const wrapper = document.createElement("div");
     wrapper.style.position = "relative";
     wrapper.style.width = `${size}px`;
@@ -295,7 +326,6 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
     wrapper.style.transition = "transform 150ms ease";
     content.appendChild(wrapper);
 
-    // 🗨️ 말풍선 꼬리 (SVG)
     const tail = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     tail.setAttribute("width", "40");
     tail.setAttribute("height", "22");
@@ -304,22 +334,23 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
     tail.style.bottom = "-14px";
     tail.style.transform = "translateX(-50%)";
     tail.style.filter = "drop-shadow(0 2px 2px rgba(0,0,0,0.15))";
-
-    // 꼬리 경로 (부드럽게 둥근 삼각형)
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", "M20 22 C16 14, 24 14, 20 22 Z");
     path.setAttribute("fill", "white");
     tail.appendChild(path);
     content.appendChild(tail);
 
-    // Hover 효과
     content.onmouseenter = () => (wrapper.style.transform = "scale(1.06)");
     content.onmouseleave = () => (wrapper.style.transform = "scale(1.0)");
 
-    // 클릭 → 상세 페이지 이동
-    content.onclick = () => window.location.href = `/place/${p.id}`;
-    content.title = `${p.name ?? ""}  •  ⭐ ${p.preference ?? "-"}`;
+    // ✅ 여기서 새로고침 없이 DetailPage 패널 열림
+    content.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      nav(`/place/${p.id}`);
+    };
 
+    content.title = `${p.name ?? ""} • ⭐ ${p.preference ?? "-"}`;
     const overlay = new kakao.maps.CustomOverlay({
       position: pos,
       content,
@@ -332,4 +363,6 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
   });
 }
 
-function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}

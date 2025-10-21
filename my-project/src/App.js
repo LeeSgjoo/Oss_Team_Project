@@ -14,11 +14,10 @@ export default function App() {
       </header>
 
       <Routes>
-        {/* MapPage가 부모, DetailPage가 그 위에 표시 */}
         <Route path="/" element={<MapPage />}>
           <Route path="place/:id" element={<DetailPage />} />
+          <Route path="/edit" element={<EditPage />} />
         </Route>
-
         <Route path="/create" element={<CreatePage />} />
       </Routes>
     </BrowserRouter>
