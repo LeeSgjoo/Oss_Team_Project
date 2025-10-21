@@ -23,7 +23,6 @@ export default function CreatePage() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // 지도에서 넘어온 좌표 (?lat=..&lng=..) 채우기
   useEffect(() => {
     const usp = new URLSearchParams(window.location.search);
     const lat = usp.get("lat");
@@ -33,7 +32,6 @@ export default function CreatePage() {
     }
   }, []);
 
-  // 파일 미리보기
   useEffect(() => {
     if (!file) return setPreview("");
     const url = URL.createObjectURL(file);
@@ -47,12 +45,7 @@ export default function CreatePage() {
   };
 
   const canSubmit = useMemo(() => {
-    return (
-      !!form.name &&
-      form.latitude !== "" &&
-      form.longitude !== "" &&
-      !busy
-    );
+    return !!form.name && form.latitude !== "" && form.longitude !== "" && !busy;
   }, [form, busy]);
 
   const getMyLocation = () => {
@@ -72,24 +65,18 @@ export default function CreatePage() {
 
     setBusy(true);
     try {
-      // 1) 이미지 업로드 (있다면)
       let image_url = "";
       if (file) {
         const ext = file.name.split(".").pop();
         const safeName = file.name.replace(/\s+/g, "_");
-        const fileRef = ref(
-          storage,
-          `places/${Date.now()}_${safeName}.${ext ?? ""}`
-        );
+        const fileRef = ref(storage, `places/${Date.now()}_${safeName}.${ext ?? ""}`);
         const task = uploadBytesResumable(fileRef, file);
 
         await new Promise((resolve, reject) => {
           task.on(
             "state_changed",
             (snap) => {
-              const pct = Math.round(
-                (snap.bytesTransferred / snap.totalBytes) * 100
-              );
+              const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
               setProgress(pct);
             },
             reject,
@@ -100,7 +87,6 @@ export default function CreatePage() {
         image_url = await getDownloadURL(fileRef);
       }
 
-      // 2) Firestore 저장
       await addDoc(collection(db, "places"), {
         name: form.name,
         type: form.type,
@@ -157,111 +143,39 @@ export default function CreatePage() {
 
       <h2 style={{ marginTop: 28 }}>장소 추가</h2>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} style={{ marginTop: 12 }}>
         <div style={{ display: "grid", gap: 8 }}>
-          <input
-            name="name"
-            placeholder="장소명*"
-            value={form.name}
-            onChange={onChange}
-            required
-          />
+          <input name="name" placeholder="장소명*" value={form.name} onChange={onChange} required />
           <div style={{ display: "flex", gap: 8 }}>
-            <input
-              name="type"
-              placeholder="유형(쉼터/풍경/카페 등)"
-              value={form.type}
-              onChange={onChange}
-              style={{ flex: 1 }}
-            />
-            <input
-              name="preference"
-              type="number"
-              min="1"
-              max="5"
-              value={form.preference}
-              onChange={onChange}
-              style={{ width: 120 }}
-              title="선호도(1~5)"
-            />
+            <input name="type" placeholder="유형(쉼터/풍경/카페 등)" value={form.type} onChange={onChange} style={{ flex: 1 }} />
+            <input name="preference" type="number" min="1" max="5" value={form.preference} onChange={onChange} style={{ width: 120 }} title="선호도(1~5)" />
           </div>
 
           <div style={{ display: "flex", gap: 8 }}>
-            <input
-              name="latitude"
-              placeholder="위도*"
-              value={form.latitude}
-              onChange={onChange}
-            />
-            <input
-              name="longitude"
-              placeholder="경도*"
-              value={form.longitude}
-              onChange={onChange}
-            />
+            <input name="latitude" placeholder="위도*" value={form.latitude} onChange={onChange} />
+            <input name="longitude" placeholder="경도*" value={form.longitude} onChange={onChange} />
             <button type="button" onClick={getMyLocation}>
               현재 위치
             </button>
           </div>
 
-          <textarea
-            name="memory_text"
-            placeholder="추억 텍스트"
-            value={form.memory_text}
-            onChange={onChange}
-            style={{ width: "100%", height: 120 }}
-          />
-          <input
-            name="related_people"
-            placeholder="함께한 사람(쉼표로 구분)"
-            value={form.related_people}
-            onChange={onChange}
-          />
+          <textarea name="memory_text" placeholder="추억 텍스트" value={form.memory_text} onChange={onChange} style={{ width: "100%", height: 120 }} />
+          <input name="related_people" placeholder="함께한 사람(쉼표로 구분)" value={form.related_people} onChange={onChange} />
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
+            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             {preview && (
-              <img
-                src={preview}
-                alt="preview"
-                style={{
-                  width: 160,
-                  height: 110,
-                  objectFit: "cover",
-                  borderRadius: 8,
-                  border: "1px solid #eee",
-                }}
-              />
+              <img src={preview} alt="preview" style={{ width: 160, height: 110, objectFit: "cover", borderRadius: 8, border: "1px solid #eee" }} />
             )}
           </div>
 
           {busy && progress > 0 && (
-            <div
-              style={{
-                width: "100%",
-                height: 8,
-                background: "#eee",
-                borderRadius: 999,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${progress}%`,
-                  height: "100%",
-                  background: "#4caf50",
-                }}
-              />
+            <div style={{ width: "100%", height: 8, background: "#eee", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ width: `${progress}%`, height: "100%", background: "#4caf50" }} />
             </div>
           )}
 
-          <button disabled={!canSubmit}>
-            {busy ? "업로드 중..." : "등록"}
-          </button>
+          <button disabled={!canSubmit}>{busy ? "업로드 중..." : "등록"}</button>
         </div>
       </form>
     </div>

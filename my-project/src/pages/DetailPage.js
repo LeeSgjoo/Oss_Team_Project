@@ -65,6 +65,7 @@ export default function DetailPage() {
         ✕
       </button>
 
+
       <div style={{ marginTop: 28 }}>
         <img
           src={data.image_url || "https://via.placeholder.com/800x500?text=No+Image"}
