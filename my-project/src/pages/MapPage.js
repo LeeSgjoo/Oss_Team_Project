@@ -304,46 +304,27 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef, nav) {
     const size = base + (pref - 3) * 8 + (idx % 3) * 6;
     const img = p.image_url || "https://via.placeholder.com/200x200?text=No+Image";
 
+    // 🎨 content: 말풍선 꼬리 없는 원형 썸네일
     const content = document.createElement("div");
     content.style.position = "relative";
     content.style.transform = "translate(-50%, -100%)";
     content.style.cursor = "pointer";
-    content.style.width = `${size + 12}px`;
-    content.style.height = `${size + 20}px`;
+    content.style.width = `${size}px`;
+    content.style.height = `${size}px`;
+    content.style.borderRadius = "50%";
+    content.style.overflow = "hidden";
+    content.style.border = "4px solid white";
+    content.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)";
+    content.style.backgroundImage = `url('${img}')`;
+    content.style.backgroundSize = "cover";
+    content.style.backgroundPosition = "center";
+    content.style.transition = "transform 0.15s ease";
 
-    const wrapper = document.createElement("div");
-    wrapper.style.position = "relative";
-    wrapper.style.width = `${size}px`;
-    wrapper.style.height = `${size}px`;
-    wrapper.style.margin = "0 auto";
-    wrapper.style.borderRadius = "50%";
-    wrapper.style.overflow = "hidden";
-    wrapper.style.border = "5px solid white";
-    wrapper.style.boxShadow = "0 6px 18px rgba(0,0,0,0.25)";
-    wrapper.style.backgroundImage = `url('${img}')`;
-    wrapper.style.backgroundSize = "cover";
-    wrapper.style.backgroundPosition = "center";
-    wrapper.style.transition = "transform 150ms ease";
-    content.appendChild(wrapper);
+    // hover 효과
+    content.onmouseenter = () => (content.style.transform = "translate(-50%, -100%) scale(1.1)");
+    content.onmouseleave = () => (content.style.transform = "translate(-50%, -100%) scale(1.0)");
 
-    const tail = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    tail.setAttribute("width", "40");
-    tail.setAttribute("height", "22");
-    tail.style.position = "absolute";
-    tail.style.left = "50%";
-    tail.style.bottom = "-14px";
-    tail.style.transform = "translateX(-50%)";
-    tail.style.filter = "drop-shadow(0 2px 2px rgba(0,0,0,0.15))";
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "M20 22 C16 14, 24 14, 20 22 Z");
-    path.setAttribute("fill", "white");
-    tail.appendChild(path);
-    content.appendChild(tail);
-
-    content.onmouseenter = () => (wrapper.style.transform = "scale(1.06)");
-    content.onmouseleave = () => (wrapper.style.transform = "scale(1.0)");
-
-    // ✅ 여기서 새로고침 없이 DetailPage 패널 열림
+    // ✅ 클릭 → Detail 패널 열기
     content.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -351,6 +332,7 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef, nav) {
     };
 
     content.title = `${p.name ?? ""} • ⭐ ${p.preference ?? "-"}`;
+
     const overlay = new kakao.maps.CustomOverlay({
       position: pos,
       content,
@@ -362,6 +344,7 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef, nav) {
     storeRef.current.push(overlay);
   });
 }
+
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
