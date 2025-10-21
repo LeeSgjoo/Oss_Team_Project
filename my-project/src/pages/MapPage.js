@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { loadKakao } from "../kakaoLoader";
 
 export default function MapPage() {
+  const nav = useNavigate();
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const myOverlaysRef = useRef([]);       // 우리(저장된) 커스텀 오버레이들
@@ -73,7 +75,7 @@ export default function MapPage() {
         if (window.confirm("이 위치로 새로운 장소를 추가할까요?")) {
           const lat = e.latLng.getLat().toFixed(6);
           const lng = e.latLng.getLng().toFixed(6);
-          window.location.href = `/create?lat=${lat}&lng=${lng}`;
+          nav(`/create?lat=${lat}&lng=${lng}`);
         }
       });
 
@@ -225,7 +227,7 @@ export default function MapPage() {
                   onClick={() => {
                     const lat = parseFloat(r.y).toFixed(6);
                     const lng = parseFloat(r.x).toFixed(6);
-                    window.location.href = `/create?lat=${lat}&lng=${lng}`;
+                    nav(`/create?lat=${lat}&lng=${lng}`);
                   }}
                 >
                   여기로 장소추가
