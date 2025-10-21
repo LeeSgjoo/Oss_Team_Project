@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Outlet } from "react-router-dom";
 import { db } from "../firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { loadKakao } from "../kakaoLoader";
@@ -247,6 +248,9 @@ export default function MapPage() {
         ref={mapEl}
         style={{ width: "100%", height: "calc(100vh - 60px)", borderTop: "1px solid #f0f0f0" }}
       />
+
+      {/* 오른쪽 디테일 패널(슬라이드) 출력 위치 */}
+      <Outlet />
     </div>
   );
 }
@@ -301,10 +305,7 @@ function drawSavedPlaceOverlays(kakao, map, places, storeRef) {
 
     // 꼬리 경로 (부드럽게 둥근 삼각형)
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute(
-      "d",
-      "M20 22 C16 14, 24 14, 20 22 Z"
-    );
+    path.setAttribute("d", "M20 22 C16 14, 24 14, 20 22 Z");
     path.setAttribute("fill", "white");
     tail.appendChild(path);
     content.appendChild(tail);

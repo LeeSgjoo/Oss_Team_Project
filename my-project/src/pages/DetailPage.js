@@ -31,86 +31,96 @@ export default function DetailPage() {
     nav("/");
   };
 
-  if (busy) return <div style={{ padding: 24 }}>불러오는 중...</div>;
+  if (busy) return null;
   if (!data) return null;
 
   return (
-    <div style={{ maxWidth: 920, margin: "24px auto", padding: "0 12px" }}>
-      <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ flex: "0 0 420px" }}>
-          <img
-            src={
-              data.image_url ||
-              "https://via.placeholder.com/800x500?text=No+Image"
-            }
-            alt={data.name}
-            style={{
-              width: "100%",
-              height: 300,
-              objectFit: "cover",
-              borderRadius: 12,
-              border: "1px solid #eee",
-            }}
-          />
+    <div
+      style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        height: "100vh",
+        width: 420,
+        background: "#fff",
+        boxShadow: "-4px 0 16px rgba(0,0,0,0.15)",
+        overflowY: "auto",
+        padding: "24px 16px",
+        transition: "transform 0.3s ease",
+        zIndex: 5,
+      }}
+    >
+      <button
+        onClick={() => nav("/")}
+        style={{
+          border: "none",
+          background: "transparent",
+          fontSize: 20,
+          cursor: "pointer",
+          position: "absolute",
+          top: 12,
+          right: 16,
+        }}
+      >
+        ✕
+      </button>
+
+      <div style={{ marginTop: 28 }}>
+        <img
+          src={data.image_url || "https://via.placeholder.com/800x500?text=No+Image"}
+          alt={data.name}
+          style={{
+            width: "100%",
+            height: 240,
+            objectFit: "cover",
+            borderRadius: 12,
+            border: "1px solid #eee",
+          }}
+        />
+
+        <h2 style={{ margin: "16px 0 4px" }}>{data.name}</h2>
+        <div style={{ color: "#666", marginBottom: 4 }}>
+          {data.type || "유형 없음"} • ⭐ {data.preference ?? "-"}
+        </div>
+        <div style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>
+          위치: {data.latitude}, {data.longitude}
+        </div>
+        <div style={{ whiteSpace: "pre-line", lineHeight: 1.6 }}>
+          {data.memory_text || "추억 텍스트가 없습니다."}
         </div>
 
-        <div style={{ flex: "1 1 320px" }}>
-          <h2 style={{ margin: "8px 0" }}>{data.name}</h2>
-          <div style={{ color: "#666", marginBottom: 4 }}>
-            {data.type || "유형 없음"} • ⭐ {data.preference ?? "-"}
+        {data.related_people && (
+          <div style={{ marginTop: 12, fontSize: 14 }}>
+            함께한 사람: {data.related_people}
           </div>
-          <div style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>
-            위치: {data.latitude}, {data.longitude}
-          </div>
-          <div style={{ whiteSpace: "pre-line", lineHeight: 1.6 }}>
-            {data.memory_text || "추억 텍스트가 없습니다."}
-          </div>
-          {data.related_people && (
-            <div style={{ marginTop: 12, fontSize: 14 }}>
-              함께한 사람: {data.related_people}
-            </div>
-          )}
+        )}
 
-          {/* 버튼 영역 */}
-          <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Link
-              to="/"
-              style={{
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: 8,
-              }}
-            >
-              ← 목록
-            </Link>
+        <div style={{ marginTop: 20, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link
+            to={`/edit/${data.id}`}
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #0a84ff",
+              color: "#0a84ff",
+              borderRadius: 8,
+              background: "transparent",
+            }}
+          >
+            수정
+          </Link>
 
-            {/* ✅ 수정 버튼 추가 */}
-            <Link
-              to={`/edit/${data.id}`}
-              style={{
-                padding: "8px 12px",
-                border: "1px solid #0a84ff",
-                color: "#0a84ff",
-                borderRadius: 8,
-                background: "transparent",
-              }}
-            >
-              수정
-            </Link>
-
-            <button
-              onClick={handleDelete}
-              style={{
-                padding: "8px 12px",
-                border: "1px solid #f33",
-                color: "#f33",
-                borderRadius: 8,
-                background: "transparent",
-              }}
-            >
-              삭제
-            </button>
-          </div>
+          <button
+            onClick={handleDelete}
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #f33",
+              color: "#f33",
+              borderRadius: 8,
+              background: "transparent",
+            }}
+          >
+            삭제
+          </button>
         </div>
       </div>
     </div>
