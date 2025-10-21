@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import MapPage from "./pages/MapPage";
 import CreatePage from "./pages/CreatePage";
 import DetailPage from "./pages/DetailPage";
+import EditPage from "./pages/EditPage";
 
 export default function App() {
   return (
