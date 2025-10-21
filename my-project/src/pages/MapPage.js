@@ -95,7 +95,7 @@ export default function MapPage() {
         searchPinRef.current = null;
       }
     };
-  }, [loading, savedPlaces]);
+  }, [loading, savedPlaces, nav]);
 
   // 3) 카카오 키워드 검색 실행
   const doSearch = () => {
