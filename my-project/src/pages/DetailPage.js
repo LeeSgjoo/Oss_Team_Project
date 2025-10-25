@@ -68,7 +68,7 @@ export default function DetailPage() {
 
       <div style={{ marginTop: 28 }}>
         <img
-          src={data.image_url || "https://via.placeholder.com/800x500?text=No+Image"}
+          src={data.image_url || "https://images.pexels.com/photos/28216688/pexels-photo-28216688.png"}
           alt={data.name}
           style={{
             width: "100%",
