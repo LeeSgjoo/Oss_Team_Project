@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { db } from "../firebase";
-import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, updateDoc } from "firebase/firestore";
 
 export default function DetailPage() {
   const { id } = useParams();
   const nav = useNavigate();
   const [data, setData] = useState(null);
+  const [memoryText, setMemoryText] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
@@ -17,7 +19,9 @@ export default function DetailPage() {
           alert("문서를 찾을 수 없습니다.");
           return nav("/");
         }
-        setData({ id: snap.id, ...snap.data() });
+        const placeData = { id: snap.id, ...snap.data() };
+        setData(placeData);
+        setMemoryText(placeData.memory_text || "");
       } finally {
         setBusy(false);
       }
@@ -29,6 +33,27 @@ export default function DetailPage() {
     await deleteDoc(doc(db, "places", id));
     alert("삭제되었습니다.");
     nav("/");
+  };
+
+  const handleMemoryUpdate = async () => {
+    if (!data) return;
+    if ((data.memory_text || "") === memoryText) {
+      alert("변경된 내용이 없습니다.");
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      await updateDoc(doc(db, "places", id), {
+        memory_text: memoryText,
+      });
+      setData((p) => ({ ...p, memory_text: memoryText }));
+      alert("추억이 업데이트되었습니다.");
+    } catch (e) {
+      console.error("Update failed:", e);
+      alert("업데이트에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (busy) return null;
@@ -86,9 +111,22 @@ export default function DetailPage() {
         <div style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>
           위치: {data.latitude}, {data.longitude}
         </div>
-        <div style={{ whiteSpace: "pre-line", lineHeight: 1.6 }}>
-          {data.memory_text || "추억 텍스트가 없습니다."}
-        </div>
+
+        {/* 추억 텍스트 입력 영역 */}
+        <textarea
+          value={memoryText}
+          onChange={(e) => setMemoryText(e.target.value)}
+          placeholder="이 장소에 대한 추억을 기록해보세요."
+          style={{
+            width: "100%",
+            height: 150,
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            padding: "8px 12px",
+            lineHeight: 1.6,
+            resize: "vertical",
+          }}
+        />
 
         {data.related_people && (
           <div style={{ marginTop: 12, fontSize: 14 }}>
@@ -97,6 +135,19 @@ export default function DetailPage() {
         )}
 
         <div style={{ marginTop: 20, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            onClick={handleMemoryUpdate}
+            disabled={isUpdating}
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #4caf50",
+              color: "#4caf50",
+              borderRadius: 8,
+              background: "transparent",
+            }}
+          >
+            {isUpdating ? "업데이트 중..." : "업데이트"}
+          </button>
           <Link
             to={`/edit/${data.id}`}
             style={{

@@ -41,7 +41,8 @@ export default function CreatePage() {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
+    const newValue = name === "preference" ? Number(value) : value;
+    setForm((p) => ({ ...p, [name]: newValue }));
   };
 
   const canSubmit = useMemo(() => {
@@ -144,11 +145,59 @@ export default function CreatePage() {
       <h2 style={{ marginTop: 28 }}>장소 추가</h2>
 
       <form onSubmit={handleSubmit} style={{ marginTop: 12 }}>
+        {/* 이미지 미리보기 영역을 상단으로 이동하고 DetailPage와 유사한 스타일 적용 */}
+        <div style={{ marginBottom: 16 }}>
+          <img
+            src={preview || "https://images.pexels.com/photos/28216688/pexels-photo-28216688.png"}
+            alt="preview"
+            style={{
+              width: "100%",
+              height: 240,
+              objectFit: "cover",
+              borderRadius: 12,
+              border: "1px solid #eee",
+            }}
+          />
+        </div>
         <div style={{ display: "grid", gap: 8 }}>
           <input name="name" placeholder="장소명*" value={form.name} onChange={onChange} required />
           <div style={{ display: "flex", gap: 8 }}>
             <input name="type" placeholder="유형(쉼터/풍경/카페 등)" value={form.type} onChange={onChange} style={{ flex: 1 }} />
-            <input name="preference" type="number" min="1" max="5" value={form.preference} onChange={onChange} style={{ width: 120 }} title="선호도(1~5)" />
+          </div>
+
+          <div>
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <span style={{ marginRight: 8, fontSize: 14, color: "#333" }}>선호도:</span>
+              {/* form.preference 값에 따라 별 아이콘의 개수를 동적으로 렌더링합니다. */}
+              {Array.from({ length: form.preference }).map((_, index) => {
+                const starValue = index + 1;
+                return (
+                  <button
+                    key={starValue}
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, preference: starValue }))} // 클릭 시 해당 값으로 선호도 설정
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontSize: 24,
+                      color: "#ffc107", // 항상 노란색으로 표시
+                    }}
+                  >
+                    ⭐
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 4 }}>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <label key={`radio-${value}`} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                  <input type="radio" name="preference" value={value} checked={form.preference === value} onChange={onChange} style={{ cursor: "pointer" }} />
+                  {value}
+                </label>
+              ))}
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 8 }}>
@@ -162,12 +211,7 @@ export default function CreatePage() {
           <textarea name="memory_text" placeholder="추억 텍스트" value={form.memory_text} onChange={onChange} style={{ width: "100%", height: 120 }} />
           <input name="related_people" placeholder="함께한 사람(쉼표로 구분)" value={form.related_people} onChange={onChange} />
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            {preview && (
-              <img src={preview} alt="preview" style={{ width: 160, height: 110, objectFit: "cover", borderRadius: 8, border: "1px solid #eee" }} />
-            )}
-          </div>
+          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
 
           {busy && progress > 0 && (
             <div style={{ width: "100%", height: 8, background: "#eee", borderRadius: 999, overflow: "hidden" }}>

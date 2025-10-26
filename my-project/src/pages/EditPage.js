@@ -64,7 +64,9 @@ export default function EditPage() {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
+    // 라디오 버튼의 값은 문자열이므로 숫자로 변환해줍니다.
+    const newValue = name === "preference" ? Number(value) : value;
+    setForm((p) => ({ ...p, [name]: newValue }));
   };
 
   const canSubmit = useMemo(() => {
@@ -72,7 +74,7 @@ export default function EditPage() {
   }, [form, saving]);
 
   const onSave = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // 폼 제출 기본 동작 방지
     if (!canSubmit) return;
 
     setSaving(true);
@@ -169,16 +171,48 @@ export default function EditPage() {
               onChange={onChange}
               style={{ flex: 1 }}
             />
-            <input
-              name="preference"
-              type="number"
-              min="1"
-              max="5"
-              value={form.preference}
-              onChange={onChange}
-              style={{ width: 120 }}
-              title="선호도(1~5)"
-            />
+          </div>
+
+          <div>
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <span style={{ marginRight: 8, fontSize: 14, color: "#333" }}>선호도:</span>
+              {/* form.preference 값에 따라 별 아이콘의 개수를 동적으로 렌더링합니다. */}
+              {Array.from({ length: form.preference }).map((_, index) => {
+                const starValue = index + 1;
+                return (
+                  <button
+                    key={starValue}
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, preference: starValue }))} // 클릭 시 해당 값으로 선호도 설정
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontSize: 24,
+                      color: "#ffc107", // 항상 노란색으로 표시
+                    }}
+                  >
+                    ⭐
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 4 }}>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <label key={`radio-${value}`} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="preference"
+                    value={value}
+                    checked={form.preference === value}
+                    onChange={onChange}
+                    style={{ cursor: "pointer" }}
+                  />
+                  {value}
+                </label>
+              ))}
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 8 }}>
@@ -245,7 +279,7 @@ export default function EditPage() {
               ) : null}
             </div>
           </div>
-
+          
           <button disabled={!canSubmit}>
             {saving ? "저장 중..." : "저장"}
           </button>
