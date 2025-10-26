@@ -4,7 +4,7 @@ import { db } from "../firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { loadKakao } from "../kakaoLoader";
 
-export default function MapPage() {
+export default function MapPage({ isSkyView }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const myOverlaysRef = useRef([]);       // 저장된 오버레이
@@ -98,6 +98,18 @@ export default function MapPage() {
       }
     };
   }, [loading, savedPlaces, nav]); // ✅ nav 의존성 추가
+
+  // ✅ 스카이뷰 전환
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const { kakao } = window;
+    if (!kakao) return;
+
+    const mapType = isSkyView
+      ? kakao.maps.MapTypeId.HYBRID
+      : kakao.maps.MapTypeId.ROADMAP;
+    mapRef.current.setMapTypeId(mapType);
+  }, [isSkyView]);
 
   // ✅ Kakao 키워드 검색 실행
   const doSearch = () => {
